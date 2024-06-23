@@ -46,6 +46,7 @@ let g:vim_ai_chat_default = {
 \    "request_timeout": 20,
 \    "enable_auth": 1,
 \    "selection_boundary": "",
+\    "role_prefix": "",
 \    "initial_prompt": s:initial_chat_prompt,
 \  },
 \  "ui": {

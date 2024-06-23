@@ -106,20 +106,22 @@ def render_text_chunks(chunks, is_selection):
         print_info_message('Empty response received. Tip: You can try modifying the prompt and retry.')
 
 
-def parse_chat_messages(chat_content):
+def parse_chat_messages(chat_content, role_prefix=None):
     lines = chat_content.splitlines()
     messages = []
+    role_prefix = role_prefix or ""
+
     for line in lines:
-        if line.startswith(">>> system"):
+        if line.startswith(f"{role_prefix}>>> system"):
             messages.append({"role": "system", "content": ""})
             continue
-        if line.startswith(">>> user"):
+        if line.startswith(f"{role_prefix}>>> user"):
             messages.append({"role": "user", "content": ""})
             continue
-        if line.startswith(">>> include"):
+        if line.startswith(f"{role_prefix}>>> include"):
             messages.append({"role": "include", "content": ""})
             continue
-        if line.startswith("<<< assistant"):
+        if line.startswith(f"{role_prefix}<<< assistant"):
             messages.append({"role": "assistant", "content": ""})
             continue
         if not messages:

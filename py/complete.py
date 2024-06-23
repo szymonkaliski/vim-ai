@@ -16,6 +16,8 @@ config_options = {
 openai_options = make_openai_options(config_options)
 http_options = make_http_options(config_options)
 
+role_prefix = config_options.get('role_prefix', None)
+role_prefix = f"{role_prefix} " or ""
 is_selection = vim.eval("l:is_selection")
 
 def complete_engine(prompt):
@@ -36,8 +38,8 @@ def complete_engine(prompt):
 def chat_engine(prompt):
     initial_prompt = config_options.get('initial_prompt', [])
     initial_prompt = '\n'.join(initial_prompt)
-    chat_content = f"{initial_prompt}\n\n>>> user\n\n{prompt}".strip()
-    messages = parse_chat_messages(chat_content)
+    chat_content = f"{initial_prompt}\n\n{role_prefix}>>> user\n\n{prompt}".strip()
+    messages = parse_chat_messages(chat_content, role_prefix)
     request = {
         'stream': True,
         'messages': messages,
