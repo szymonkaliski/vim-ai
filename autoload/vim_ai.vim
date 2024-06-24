@@ -13,7 +13,8 @@ let s:last_instruction = ""
 let s:last_command = ""
 let s:last_config = {}
 
-let s:scratch_buffer_name = ">>> AI chat"
+let s:default_scratch_buffer_name = ">>> AI chat"
+let s:scratch_buffer_name = get(g:, 'vim_ai_chat_scratch_buffer_name', s:default_scratch_buffer_name)
 
 " Configures ai-chat scratch window.
 " - scratch_buffer_keep_open = 0
