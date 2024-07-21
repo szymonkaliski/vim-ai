@@ -200,7 +200,11 @@ function! vim_ai#AIEditRun(config, ...) range abort
 endfunction
 
 function! s:ReuseOrCreateChatWindow(config)
-  if &filetype != 'aichat'
+  " Extract the file name of the current buffer
+  let l:filename = expand('%:t')
+  
+  " Check if the filetype is not 'aichat' and filename does not end with '.aichat'
+  if &filetype != 'aichat' && l:filename !~ '\.aichat$'
     " reuse chat in active window or tab
     let l:chat_win_ids = win_findbuf(bufnr(s:scratch_buffer_name))
     if !empty(l:chat_win_ids)
@@ -210,7 +214,7 @@ function! s:ReuseOrCreateChatWindow(config)
 
     " reuse .aichat file on the same tab
     let buffer_list_tab = tabpagebuflist(tabpagenr())
-    let buffer_list_tab = filter(buffer_list_tab, 'getbufvar(v:val, "&filetype") ==# "aichat"')
+    let buffer_list_tab = filter(buffer_list_tab, 'getbufvar(v:val, "&filetype") ==# "aichat" || fnamemodify(bufname(v:val), ":t") =~# "\.aichat$"')
     if len(buffer_list_tab) > 0
       call win_gotoid(win_findbuf(buffer_list_tab[0])[0])
       return
@@ -221,7 +225,7 @@ function! s:ReuseOrCreateChatWindow(config)
     for i in range(tabpagenr('$'))
       call extend(buffer_list, tabpagebuflist(i + 1))
     endfor
-    let buffer_list = filter(buffer_list, 'getbufvar(v:val, "&filetype") ==# "aichat"')
+    let buffer_list = filter(buffer_list, 'getbufvar(v:val, "&filetype") ==# "aichat" || fnamemodify(bufname(v:val), ":t") =~# "\.aichat$"')
     if len(buffer_list) > 0
       call win_gotoid(win_findbuf(buffer_list[0])[0])
       return
