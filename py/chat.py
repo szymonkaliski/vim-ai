@@ -11,12 +11,12 @@ config_options = config['options']
 config_ui = config['ui']
 
 role_prefix = config_options.get('role_prefix', None)
-role_prefix = f"{role_prefix} " or ""
+role_prefix = role_prefix and f"{role_prefix} " or ""
 
 def initialize_chat_window():
     lines = vim.eval('getline(1, "$")')
-    user_prompt = f"{role_prefix}>>> user"
-    if user_prompt not in lines:
+    contains_user_prompt = f"{role_prefix}>>> user" in lines
+    if not contains_user_prompt:
         # user role not found, put whole file content as an user prompt
         vim.command("normal! gg")
         populates_options = config_ui['populate_options'] == '1'
