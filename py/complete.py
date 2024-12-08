@@ -4,7 +4,10 @@ import vim
 plugin_root = vim.eval("s:plugin_root")
 vim.command(f"py3file {plugin_root}/py/utils.py")
 
-config = normalize_config(vim.eval("l:config"))
+prompt, config = load_config_and_prompt()
+config_options = config['options']
+config_ui = config['ui']
+
 engine = config['engine']
 
 prompt, role_options = parse_prompt_and_role(vim.eval("l:prompt"))
@@ -18,11 +21,14 @@ http_options = make_http_options(config_options)
 
 role_prefix = config_options.get('role_prefix', None)
 role_prefix = f"{role_prefix} " or ""
+
 is_selection = vim.eval("l:is_selection")
 
 def complete_engine(prompt):
+    openai_options = make_openai_options(config_options)
+    http_options = make_http_options(config_options)
+
     request = {
-        'stream': True,
         'prompt': prompt,
         **openai_options
     }
