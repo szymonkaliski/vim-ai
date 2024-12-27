@@ -249,28 +249,28 @@ function! s:ReuseOrCreateChatWindow(config)
     return
   endif
 
-  if &filetype != 'aichat'
-    " reuse chat in active window or tab
+  if &filetype != 'aichat' && &filetype != 'markdown'
+    " reuse chat or markdown in active window or tab
     let l:chat_win_ids = win_findbuf(bufnr(s:scratch_buffer_name))
     if !empty(l:chat_win_ids)
       call win_gotoid(l:chat_win_ids[0])
       return
     endif
 
-    " reuse .aichat file on the same tab
+    " reuse .aichat or .markdown file on the same tab
     let buffer_list_tab = tabpagebuflist(tabpagenr())
-    let buffer_list_tab = filter(buffer_list_tab, 'getbufvar(v:val, "&filetype") ==# "aichat" || fnamemodify(bufname(v:val), ":t") =~# "\.aichat$"')
+    let buffer_list_tab = filter(buffer_list_tab, 'getbufvar(v:val, "&filetype") ==# "aichat" || getbufvar(v:val, "&filetype") ==# "markdown" || fnamemodify(bufname(v:val), ":t") =~# "\.aichat$" || fnamemodify(bufname(v:val), ":t") =~# "\.markdown$"')
     if len(buffer_list_tab) > 0
       call win_gotoid(win_findbuf(buffer_list_tab[0])[0])
       return
     endif
 
-    " reuse any .aichat buffer in the session
+    " reuse any .aichat or .markdown buffer in the session
     let buffer_list = []
     for i in range(tabpagenr('$'))
       call extend(buffer_list, tabpagebuflist(i + 1))
     endfor
-    let buffer_list = filter(buffer_list, 'getbufvar(v:val, "&filetype") ==# "aichat" || fnamemodify(bufname(v:val), ":t") =~# "\.aichat$"')
+    let buffer_list = filter(buffer_list, 'getbufvar(v:val, "&filetype") ==# "aichat" || getbufvar(v:val, "&filetype") ==# "markdown" || fnamemodify(bufname(v:val), ":t") =~# "\.aichat$" || fnamemodify(bufname(v:val), ":t") =~# "\.markdown$"')
     if len(buffer_list) > 0
       call win_gotoid(win_findbuf(buffer_list[0])[0])
       return
