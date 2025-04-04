@@ -9,8 +9,9 @@ default_config = {
     "temperature": "1",
     "request_timeout": "20",
     "stream": "1",
-    "enable_auth": "1",
+    "auth_type": "bearer",
     "token_file_path": "",
+    "token_load_fn": "",
     "selection_boundary": "",
     "initial_prompt": "You are a general assistant.",
   },
@@ -18,7 +19,6 @@ default_config = {
     "open_chat_command": "preset_below",
     "scratch_buffer_keep_open": "0",
     "populate_options": "0",
-    "code_syntax_enabled": "1",
     "paste_mode": "1",
   },
 }

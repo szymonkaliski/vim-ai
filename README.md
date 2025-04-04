@@ -16,6 +16,7 @@ To get an idea what is possible to do with AI commands see the [prompts](https:/
 - Vision capabilities (image to text)
 - Generate images
 - Integrates with any OpenAI-compatible API
+- AI provider plugins
 
 ## How it works
 
@@ -29,10 +30,17 @@ In case you would like to experiment with Gemini, Claude or other models running
 A simple way is to use [OpenRouter](https://openrouter.ai) which has a fair pricing (and currently offers many models for [free](https://openrouter.ai/models?max_price=0)), or setup a proxy like [LiteLLM](https://github.com/BerriAI/litellm) locally.
 See this simple [guide](#example-create-custom-roles-to-interact-with-openrouter-models) on configuring custom OpenRouter roles.
 
+🚨 **Announcement** 🚨
+
+`vim-ai` can now be extended with custom provider plugins.
+However, there aren't many available yet, so developing new ones is welcome!
+For more, see the [providers](#providers) section.
+
 ## Table of Contents
 
 - [Installation](#installation)
 - [Usage](#usage)
+- [Providers](#providers)
 - [Roles](#roles)
 - [Reference](#reference)
 - [Configuration](#configuration)
@@ -114,9 +122,20 @@ To use an AI command, type the command followed by an instruction prompt. You ca
 
 **Tip:** Use pre-defined roles `/right`, `/below`, `/tab` to choose how chat is open, e.g. `:AIC /right`
 
+**Tip:** Use special role `/populate` to dump options to chat header, e.g. `:AIC /populate /gemini`
+
 **Tip:** Combine commands with a range `:help range`, e.g. to select the whole buffer - `:%AIE fix grammar`
 
 If you are interested in more tips or would like to level up your Vim with more commands like [`:GitCommitMessage`](https://github.com/madox2/vim-ai/wiki/Custom-commands#suggest-a-git-commit-message) - suggesting a git commit message, visit the [Community Wiki](https://github.com/madox2/vim-ai/wiki).
+
+## Providers
+
+This is the list of 3rd party provider plugins allowing to use different AI providers.
+
+- [google provider](https://github.com/madox2/vim-ai-provider-google) - Google's Gemini models
+
+In case you are interested in developing one, have a look at reference [google provider](https://github.com/madox2/vim-ai-provider-google).
+Do not forget to open PR updating this list.
 
 ## Roles
 
@@ -237,7 +256,19 @@ What object is on the image?
 ~/myimage.jpg
 ```
 
-Supported chat sections are **`>>> system`**, **`>>> user`**, **`>>> include`** and **`<<< assistant`**
+Execute command and include stdout into the chat:
+
+```
+>>> user
+
+Suggest git commit message
+
+>>> exec
+
+git diff
+```
+
+Supported chat sections are **`>>> system`**, **`>>> user`**, **`>>> include`**, **`>>> exec`** and **`<<< assistant`**
 
 ### `:AIRedo`
 
@@ -277,12 +308,12 @@ options.initial_prompt =
 Or customize the options directly in the chat buffer:
 
 ```properties
-[chat-options]
-model=o1-preview
-stream=0
-temperature=1
-max_completion_tokens=25000
-initial_prompt=
+[chat]
+options.model = o1-preview
+options.stream = 0
+options.temperature = 1
+options.max_completion_tokens = 25000
+options.initial_prompt =
 
 >>> user
 
@@ -304,18 +335,20 @@ If you answer in a code, do not wrap it in markdown code block.
 END
 
 " :AI
+" - provider: AI provider
 " - prompt: optional prepended prompt
-" - engine: chat | complete - see how to configure complete engine in the section below
 " - options: openai config (see https://platform.openai.com/docs/api-reference/completions)
 " - options.initial_prompt: prompt prepended to every chat request (list of lines or string)
+" - options.temperature: use -1 to disable this parameter
 " - options.request_timeout: request timeout in seconds
-" - options.enable_auth: enable authorization using openai key
+" - options.auth_type: API authentication method (bearer, api-key, none)
 " - options.token_file_path: override global token configuration
+" - options.token_load_fn: expression/vim function to load token
 " - options.selection_boundary: selection prompt wrapper (eliminates empty responses, see #20)
 " - ui.paste_mode: use paste mode (see more info in the Notes below)
 let g:vim_ai_complete = {
+\  "provider": "openai",
 \  "prompt": "",
-\  "engine": "chat",
 \  "options": {
 \    "model": "gpt-4o",
 \    "endpoint_url": "https://api.openai.com/v1/chat/completions",
@@ -324,8 +357,9 @@ let g:vim_ai_complete = {
 \    "temperature": 0.1,
 \    "request_timeout": 20,
 \    "stream": 1,
-\    "enable_auth": 1,
+\    "auth_type": "bearer",
 \    "token_file_path": "",
+\    "token_load_fn": "",
 \    "selection_boundary": "#####",
 \    "initial_prompt": s:initial_complete_prompt,
 \  },
@@ -335,18 +369,20 @@ let g:vim_ai_complete = {
 \}
 
 " :AIEdit
+" - provider: AI provider
 " - prompt: optional prepended prompt
-" - engine: chat | complete - see how to configure complete engine in the section below
 " - options: openai config (see https://platform.openai.com/docs/api-reference/completions)
 " - options.initial_prompt: prompt prepended to every chat request (list of lines or string)
+" - options.temperature: use -1 to disable this parameter
 " - options.request_timeout: request timeout in seconds
-" - options.enable_auth: enable authorization using openai key
+" - options.auth_type: API authentication method (bearer, api-key, none)
 " - options.token_file_path: override global token configuration
+" - options.token_load_fn: expression/vim function to load token
 " - options.selection_boundary: selection prompt wrapper (eliminates empty responses, see #20)
 " - ui.paste_mode: use paste mode (see more info in the Notes below)
 let g:vim_ai_edit = {
+\  "provider": "openai",
 \  "prompt": "",
-\  "engine": "chat",
 \  "options": {
 \    "model": "gpt-4o",
 \    "endpoint_url": "https://api.openai.com/v1/chat/completions",
@@ -355,8 +391,9 @@ let g:vim_ai_edit = {
 \    "temperature": 0.1,
 \    "request_timeout": 20,
 \    "stream": 1,
-\    "enable_auth": 1,
+\    "auth_type": "bearer",
 \    "token_file_path": "",
+\    "token_load_fn": "",
 \    "selection_boundary": "#####",
 \    "initial_prompt": s:initial_complete_prompt,
 \  },
@@ -374,19 +411,23 @@ If you attach a code block add syntax type after ``` to enable syntax highlighti
 END
 
 " :AIChat
+" - provider: AI provider
 " - prompt: optional prepended prompt
 " - options: openai config (see https://platform.openai.com/docs/api-reference/chat)
 " - options.initial_prompt: prompt prepended to every chat request (list of lines or string)
+" - options.temperature: use -1 to disable this parameter
 " - options.request_timeout: request timeout in seconds
-" - options.enable_auth: enable authorization using openai key
+" - options.auth_type: API authentication method (bearer, api-key, none)
 " - options.token_file_path: override global token configuration
+" - options.token_load_fn: expression/vim function to load token
 " - options.selection_boundary: selection prompt wrapper (eliminates empty responses, see #20)
 " - ui.open_chat_command: preset (preset_below, preset_tab, preset_right) or a custom command
-" - ui.populate_options: put [chat-options] to the chat header
+" - ui.populate_options: dump [chat] config to the chat header
 " - ui.scratch_buffer_keep_open: re-use scratch buffer within the vim session
 " - ui.force_new_chat: force new chat window (used in chat opening roles e.g. `/tab`)
 " - ui.paste_mode: use paste mode (see more info in the Notes below)
 let g:vim_ai_chat = {
+\  "provider": "openai",
 \  "prompt": "",
 \  "options": {
 \    "model": "gpt-4o",
@@ -396,8 +437,9 @@ let g:vim_ai_chat = {
 \    "temperature": 1,
 \    "request_timeout": 20,
 \    "stream": 1,
-\    "enable_auth": 1,
+\    "auth_type": "bearer",
 \    "token_file_path": "",
+\    "token_load_fn": "",
 \    "selection_boundary": "",
 \    "initial_prompt": s:initial_chat_prompt,
 \  },
@@ -405,7 +447,6 @@ let g:vim_ai_chat = {
 \    "open_chat_command": "preset_below",
 \    "scratch_buffer_keep_open": 0,
 \    "populate_options": 0,
-\    "code_syntax_enabled": 1,
 \    "force_new_chat": 0,
 \    "paste_mode": 1,
 \  },
@@ -415,10 +456,12 @@ let g:vim_ai_chat = {
 " - prompt: optional prepended prompt
 " - options: openai config (https://platform.openai.com/docs/api-reference/images/create)
 " - options.request_timeout: request timeout in seconds
-" - options.enable_auth: enable authorization using openai key
+" - options.auth_type: API authentication method (bearer, api-key, none)
 " - options.token_file_path: override global token configuration
+" - options.token_load_fn: expression/vim function to load token
 " - options.download_dir: path to image download directory, `cwd` if not defined
 let g:vim_ai_image = {
+\  "provider": "openai",
 \  "prompt": "",
 \  "options": {
 \    "model": "dall-e-3",
@@ -426,9 +469,10 @@ let g:vim_ai_image = {
 \    "quality": "standard",
 \    "size": "1024x1024",
 \    "style": "vivid",
-\    "request_timeout": 20,
-\    "enable_auth": 1,
+\    "request_timeout": 40,
+\    "auth_type": "bearer",
 \    "token_file_path": "",
+\    "token_load_fn": "",
 \  },
 \  "ui": {
 \    "download_dir": "",
@@ -440,6 +484,14 @@ let g:vim_ai_roles_config_file = s:plugin_root . "/roles-example.ini"
 
 " custom token file location
 let g:vim_ai_token_file_path = "~/.config/openai.token"
+
+" custom fn to load token, e.g. "g:GetAIToken()"
+let g:vim_ai_token_load_fn = ""
+
+" enables/disables full markdown highlighting in aichat files
+" NOTE: code syntax highlighting works out of the box without this option enabled
+" NOTE: highlighting may be corrupted when using together with the `preservim/vim-markdown`
+g:vim_ai_chat_markdown = 0
 
 " debug settings
 let g:vim_ai_debug = 0
@@ -455,7 +507,8 @@ let g:vim_ai_debug_log_file = "/tmp/vim_ai_debug.log"
 " - setting max tokens to 0 will exclude it from the OpenAI API request parameters, it is
 "   unclear/undocumented what it exactly does, but it seems to resolve issues when the model
 "   hits token limit, which respond with `OpenAI: HTTPError 400`
-```
+" options.selection_boundary
+" - setting ``` value behaves in markdown-like fasion - adds filetype to the boundary
 
 ### Using custom API
 
@@ -466,7 +519,7 @@ See some cool projects listed in [Custom APIs](https://github.com/madox2/vim-ai/
 let g:vim_ai_chat = {
 \  "options": {
 \    "endpoint_url": "http://localhost:8000/v1/chat/completions",
-\    "enable_auth": 0,
+\    "auth_type": "none",
 \  },
 \}
 ```
@@ -500,26 +553,6 @@ Now you can use the role:
 :AI /gemini who created you?
 
 I was created by Google.
-```
-
-
-### Using complete engine for completion and edits
-
-OpenAI has recently marked [Completions API](https://platform.openai.com/docs/api-reference/completions) as a legacy API.
-Therefore `:AI` and `:AIEdit` use chat models by default.
-However it is still possible to configure and use it with models like `gpt-3.5-turbo-instruct`.
-
-```vim
-let complete_engine_config = {
-\  "engine": "complete",
-\  "options": {
-\    "model": "gpt-3.5-turbo-instruct",
-\    "endpoint_url": "https://api.openai.com/v1/completions",
-\  },
-\}
-
-let g:vim_ai_complete = complete_engine_config
-let g:vim_ai_edit = complete_engine_config
 ```
 
 ## Key bindings
@@ -556,7 +589,6 @@ function! GitCommitMessageFn()
   let l:diff = system('git --no-pager diff --staged')
   let l:prompt = "generate a short commit message from the diff below:\n" . l:diff
   let l:config = {
-  \  "engine": "chat",
   \  "options": {
   \    "model": "gpt-4o",
   \    "initial_prompt": ">>> system\nyou are a code assistant",
@@ -589,7 +621,7 @@ Contributions are welcome! Please feel free to open a pull request, report an is
 
 **Accuracy**: GPT is good at producing text and code that looks correct at first glance, but may be completely wrong. Be sure to thoroughly review, read and test all output generated by this plugin!
 
-**Privacy**: This plugin sends text to OpenAI when generating completions and edits. Therefore, do not use it on files containing sensitive information.
+**Privacy**: This plugin sends text to OpenAI (or other providers) when generating completions and edits. Therefore, do not use it on files containing sensitive information.
 
 ## License
 

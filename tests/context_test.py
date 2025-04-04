@@ -1,17 +1,15 @@
 from context import make_ai_context, make_prompt
+from unittest.mock import patch
+import vim
 
 default_config = {
-  "engine": "chat",
   "options": {
     "model": "gpt-4o",
     "endpoint_url": "https://api.openai.com/v1/chat/completions",
     "max_tokens": "0",
-    "max_completion_tokens": "0",
     "temperature": "1",
-    "request_timeout": "20",
-    "stream": "1",
-    "enable_auth": "1",
     "token_file_path": "",
+    "token_load_fn": "",
     "selection_boundary": "",
     "initial_prompt": "You are a general assistant.",
   },
@@ -19,7 +17,6 @@ default_config = {
     "open_chat_command": "preset_below",
     "scratch_buffer_keep_open": "0",
     "populate_options": "0",
-    "code_syntax_enabled": "1",
     "paste_mode": "1",
   },
 }
@@ -32,9 +29,8 @@ default_image_config = {
     "quality": "standard",
     "size": "1024x1024",
     "style": "vivid",
-    "request_timeout": "20",
-    "enable_auth": "1",
     "token_file_path": "",
+    "token_load_fn": "",
   },
   "ui": {
     "paste_mode": "1",
@@ -54,8 +50,11 @@ def test_default_config():
         'token_file_path': '/custom/path/ai.token',
     }
     expected_context = {
+        'command_type': 'chat',
         'config': { **default_config, 'options': expected_options },
         'prompt': 'translate to Slovak:\nHello world!',
+        'command_type': 'chat',
+        'roles': [],
     }
     assert expected_context == actual_context
 
@@ -102,7 +101,6 @@ def test_role_config_different_commands():
     assert 'preset_tab' == actual_config['ui']['open_chat_command']
     assert 'hello' == actual_prompt
     assert 'https://localhost/chat' == actual_config['options']['endpoint_url']
-    assert 'chat' == actual_config['engine']
 
     context  = make_ai_context({ **base, 'command_type': 'complete' })
     actual_config = context['config']
@@ -111,7 +109,6 @@ def test_role_config_different_commands():
     assert '0' == actual_config['ui']['paste_mode']
     assert 'hello' == actual_prompt
     assert 'https://localhost/complete' == actual_config['options']['endpoint_url']
-    assert 'complete' == actual_config['engine']
 
     context  = make_ai_context({ **base, 'command_type': 'edit' })
     actual_config = context['config']
@@ -120,7 +117,6 @@ def test_role_config_different_commands():
     assert '0' == actual_config['ui']['paste_mode']
     assert 'hello' == actual_prompt
     assert 'https://localhost/edit' == actual_config['options']['endpoint_url']
-    assert 'complete' == actual_config['engine']
 
 def test_multiple_role_configs():
     context = make_ai_context({
@@ -161,8 +157,11 @@ def test_image_role():
         'quality': 'hd',
     }
     expected_context = {
+        'command_type': 'image',
         'config': { **default_image_config, 'options': expected_options },
         'prompt': 'picture of the moon',
+        'command_type': 'image',
+        'roles': ['hd-image'],
     }
     assert expected_context == actual_context
 
@@ -195,3 +194,15 @@ def test_selection_prompt():
 def test_selection_boundary():
     assert 'fix grammar:\n###\nhelo word\n###' == make_prompt( '', 'fix grammar', 'helo word', '###')
     assert 'fix grammar:\n###\nhelo word\n###' == make_prompt( 'fix grammar', '', 'helo word', '###')
+
+def test_markdown_selection_boundary(mocker):
+    # add file type to markdown boundary
+    mocker.patch('vim.eval').return_value = "python"
+    assert 'fix grammar:\n```python\nhelo word\n```' == make_prompt( '', 'fix grammar', 'helo word', '```')
+
+    # do not add filetype if not appropriate
+    mocker.patch('vim.eval').return_value = "aichat"
+    assert 'fix grammar:\n```\nhelo word\n```' == make_prompt( '', 'fix grammar', 'helo word', '```')
+    mocker.patch('vim.eval').return_value = ""
+    assert 'fix grammar:\n```\nhelo word\n```' == make_prompt( '', 'fix grammar', 'helo word', '```')
+
